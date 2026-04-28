@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Playfair+Display:ital,wght@0,700;1,400&display=swap");
 
 :root {
   --green: #00783c;
@@ -13,9 +13,9 @@
   --white: #ffffff;
   --border: #d8d6d0;
   --text: #1a1a1a;
-  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --display: "EB Garamond", Garamond, Georgia, serif;
   --serif: "Playfair Display", Georgia, serif;
-  --body: "Barlow", Arial, sans-serif;
+  --body: "EB Garamond", Garamond, Georgia, serif;
 }
 
 * {
@@ -26,7 +26,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
+  font-size: 17px;
   font-family: var(--body);
+  min-height: 100vh;
 }
 
 button,
@@ -74,13 +76,19 @@ button {
   width: 30px;
 }
 
+.book-icon svg {
+  fill: currentColor;
+  height: 16px;
+  width: 16px;
+}
+
 .brand-name {
   color: var(--charcoal);
   font-family: var(--display);
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.04em;
-  line-height: 1;
+  line-height: 1.1;
   text-transform: uppercase;
 }
 
@@ -140,6 +148,16 @@ textarea {
   padding: 8px 11px;
 }
 
+.member-select select {
+  appearance: none;
+  background: var(--white)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23494c51'/%3E%3C/svg%3E")
+    no-repeat right 10px center;
+  cursor: pointer;
+  min-width: 160px;
+  padding-right: 28px;
+}
+
 .member-select select:focus,
 input:focus,
 textarea:focus {
@@ -162,6 +180,7 @@ textarea:focus {
   color: var(--muted);
   display: flex;
   gap: 7px;
+  font-size: 0.88rem;
   padding: 16px 0;
 }
 
@@ -208,6 +227,11 @@ p {
 .muted,
 .empty p {
   color: var(--muted);
+}
+
+.subtitle,
+.section-head p {
+  font-style: italic;
 }
 
 .section-head {
@@ -334,8 +358,16 @@ p {
 
 .link-stack a {
   color: var(--green);
+  display: flex;
+  gap: 5px;
+  align-items: center;
   font-size: 0.84rem;
   text-decoration: none;
+}
+
+.link-stack a::before {
+  content: "->";
+  font-size: 0.78rem;
 }
 
 .tags,
@@ -410,6 +442,8 @@ p {
 
 .progress-card p {
   color: var(--muted);
+  display: flex;
+  justify-content: space-between;
   font-size: 0.8rem;
   margin: 0;
 }
@@ -431,7 +465,15 @@ p {
 .info-grid strong {
   color: var(--charcoal);
   display: block;
+  font-weight: 600;
   margin-top: 5px;
+}
+
+.info-grid article.warm strong {
+  color: var(--warm);
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  font-style: italic;
 }
 
 .info-grid p,
@@ -471,36 +513,69 @@ p {
   top: -1px;
 }
 
-.vote {
+.vote-wrap {
   align-items: center;
-  background: transparent;
-  border: 0;
   color: var(--muted);
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
+  padding-top: 2px;
+}
+
+.vote {
+  align-items: center;
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  display: flex;
+  height: 30px;
+  justify-content: center;
   padding: 0;
+  transition: all 0.15s;
+  width: 30px;
 }
 
-.vote::first-line {
-  border: 1px solid var(--border);
+.vote:hover {
+  border-color: var(--green);
+  color: var(--green);
 }
 
-.vote strong {
+.vote.voted {
+  background: var(--green-light);
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.vote-wrap strong {
   color: var(--charcoal);
   font-family: var(--display);
-  font-size: 1.3rem;
+  font-size: 1.25rem;
+  line-height: 1;
 }
 
-.vote span {
+.vote-wrap span {
   font-family: var(--display);
   font-size: 0.58rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
 
-.vote.voted {
+.badges span.availability.audio {
+  background: var(--green-light);
+  border-color: var(--green);
   color: var(--green);
+}
+
+.badges span.availability.adaptation {
+  background: var(--warm-light);
+  border-color: var(--warm);
+  color: var(--warm);
+}
+
+.badges span.availability.paperback,
+.badges span.availability.wait {
+  background: var(--bg);
 }
 
 .quote-wall {
@@ -585,12 +660,16 @@ p {
   grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
-.member-card {
+.member-card,
+.add-member-tile {
   align-items: center;
   color: inherit;
+  padding: 18px;
+}
+
+.member-card {
   display: grid;
   grid-template-columns: 42px 1fr;
-  padding: 18px;
   text-align: left;
 }
 
@@ -616,6 +695,26 @@ p {
 
 .member-card small {
   color: var(--muted);
+}
+
+.add-member-tile {
+  background: var(--white);
+  border: 1.5px dashed var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  display: flex;
+  font-family: var(--display);
+  font-size: 0.7rem;
+  justify-content: center;
+  letter-spacing: 0.1em;
+  min-height: 80px;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+
+.add-member-tile:hover {
+  border-color: var(--green);
+  color: var(--green);
 }
 
 .empty,
@@ -646,6 +745,31 @@ p {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.footer {
+  background: var(--white);
+  border-top: 1px solid var(--border);
+  margin-top: 56px;
+  padding: 18px 40px;
+  text-align: center;
+}
+
+.footer div {
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 0.58rem;
+  letter-spacing: 0.14em;
+  margin-bottom: 5px;
+  text-transform: uppercase;
+}
+
+.footer p {
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: 0.83rem;
+  font-style: italic;
+  margin: 0;
 }
 
 .modal-shell,
