@@ -1,6 +1,6 @@
 # Summit Book Club
 
-A Vercel-ready Next.js app backed by Supabase. It replaces the old Monday.com board integration with explicit tables for members, current book, nominations, votes, quotes, and reading history.
+A Vercel-ready Next.js app backed by Supabase, with explicit tables for members, current book, nominations, votes, quotes, and reading history.
 
 ## Setup
 
