@@ -132,6 +132,7 @@ export default function Home() {
   const [toast, setToast] = useState<Toast | null>(null);
   const [modal, setModal] = useState<"" | "book" | "nomination" | "quote" | "history" | "member">("");
   const [memberEditing, setMemberEditing] = useState<Member | null>(null);
+  const [nominationEditing, setNominationEditing] = useState<Nomination | null>(null);
   const [bookForm, setBookForm] = useState(emptyBookForm);
   const [nominationForm, setNominationForm] = useState(emptyNominationForm);
   const [quoteForm, setQuoteForm] = useState({ quote_text: "", book_title: "", book_author: "" });
@@ -255,6 +256,27 @@ export default function Home() {
     setModal("book");
   }
 
+  function openNominationModal(nomination?: Nomination) {
+    setNominationEditing(nomination ?? null);
+    setNominationForm(
+      nomination
+        ? {
+            title: nomination.title,
+            author: nomination.author,
+            year: nomination.year?.toString() ?? "",
+            pages: nomination.pages?.toString() ?? "",
+            genre: nomination.genre ?? "",
+            description: nomination.description ?? "",
+            library_wait: nomination.library_wait ?? "",
+            has_audio: nomination.has_audio,
+            has_paperback: nomination.has_paperback,
+            has_adaptation: nomination.has_adaptation
+          }
+        : emptyNominationForm
+    );
+    setModal("nomination");
+  }
+
   async function saveBook(event: FormEvent) {
     event.preventDefault();
     if (!supabase) return;
@@ -300,14 +322,15 @@ export default function Home() {
 
   async function saveNomination(event: FormEvent) {
     event.preventDefault();
-    if (!supabase || !requireMember()) return;
+    if (!supabase) return;
+    if (!nominationEditing && !requireMember()) return;
     if (!nominationForm.title.trim() || !nominationForm.author.trim()) {
       showToast("Title and author are required.", "error");
       return;
     }
 
     setSaving(true);
-    const { error } = await supabase.from("nominations").insert({
+    const payload = {
       title: nominationForm.title.trim(),
       author: nominationForm.author.trim(),
       year: toNumber(nominationForm.year),
@@ -317,19 +340,43 @@ export default function Home() {
       library_wait: nominationForm.library_wait.trim() || null,
       has_audio: nominationForm.has_audio,
       has_paperback: nominationForm.has_paperback,
-      has_adaptation: nominationForm.has_adaptation,
-      suggested_by_member_id: selectedMember!.id,
-      suggested_by_name: selectedMember!.name
-    });
+      has_adaptation: nominationForm.has_adaptation
+    };
+    const result = nominationEditing
+      ? await supabase.from("nominations").update(payload).eq("id", nominationEditing.id)
+      : await supabase.from("nominations").insert({
+          ...payload,
+          suggested_by_member_id: selectedMember!.id,
+          suggested_by_name: selectedMember!.name
+        });
 
+    setSaving(false);
+    if (result.error) {
+      showToast(result.error.message, "error");
+      return;
+    }
+    showToast(nominationEditing ? "Nomination updated." : "Book nominated.", "success");
+    setNominationForm(emptyNominationForm);
+    setNominationEditing(null);
+    setModal("");
+    await loadData();
+  }
+
+  async function deleteNomination(nomination: Nomination) {
+    if (!supabase) return;
+    if (!window.confirm(`Delete "${nomination.title}" from nominations? Its votes will be removed too.`)) return;
+    setSaving(true);
+    const { error } = await supabase.from("nominations").delete().eq("id", nomination.id);
     setSaving(false);
     if (error) {
       showToast(error.message, "error");
       return;
     }
-    showToast("Book nominated.", "success");
-    setNominationForm(emptyNominationForm);
-    setModal("");
+    if (nominationEditing?.id === nomination.id) {
+      setNominationEditing(null);
+      setModal("");
+    }
+    showToast("Nomination deleted.", "success");
     await loadData();
   }
 
@@ -625,15 +672,9 @@ export default function Home() {
                             ) : null}
                           </article>
                         )}
-                        {currentBook.library_copies && (
-                          <article>
-                            <span>Library Copies</span>
-                            <strong>{currentBook.library_copies}</strong>
-                          </article>
-                        )}
                         {currentBook.cocktail_name && (
                           <article className="warm">
-                            <span>Cocktail of the Month</span>
+                            <span>Drink/Recipe of the Month</span>
                             <strong>{currentBook.cocktail_name}</strong>
                             {currentBook.cocktail_recipe ? <p>{currentBook.cocktail_recipe}</p> : null}
                             {currentBook.cocktail_paired_by ? <small>Paired by {currentBook.cocktail_paired_by}</small> : null}
@@ -670,7 +711,7 @@ export default function Home() {
                         </button>
                       ))}
                     </div>
-                    <button className="primary-button" onClick={() => setModal("nomination")}>
+                    <button className="primary-button" onClick={() => openNominationModal()}>
                       + Nominate a Book
                     </button>
                   </div>
@@ -712,6 +753,14 @@ export default function Home() {
                               {nomination.library_wait ? <span className="availability wait">{nomination.library_wait}</span> : null}
                             </div>
                             {nomination.suggested_by_name ? <small>Suggested by {nomination.suggested_by_name}</small> : null}
+                            <div className="nomination-actions">
+                              <button className="secondary-button compact" onClick={() => openNominationModal(nomination)}>
+                                Edit
+                              </button>
+                              <button className="danger-button compact" onClick={() => deleteNomination(nomination)}>
+                                Delete
+                              </button>
+                            </div>
                           </div>
                         </article>
                       );
@@ -887,14 +936,10 @@ export default function Home() {
                 <input value={bookForm.meeting_location} onChange={(e) => setBookForm({ ...bookForm, meeting_location: e.target.value })} />
               </label>
             </div>
-            <label>
-              Library copies available
-              <input value={bookForm.library_copies} onChange={(e) => setBookForm({ ...bookForm, library_copies: e.target.value })} />
-            </label>
-            <div className="divider">Cocktail of the Month</div>
+            <div className="divider">Drink/Recipe of the Month</div>
             <div className="form-grid two">
               <label>
-                Cocktail name
+                Drink/recipe name
                 <input value={bookForm.cocktail_name} onChange={(e) => setBookForm({ ...bookForm, cocktail_name: e.target.value })} />
               </label>
               <label>
@@ -903,7 +948,7 @@ export default function Home() {
               </label>
             </div>
             <label>
-              Recipe / description
+              Pairing Description
               <textarea value={bookForm.cocktail_recipe} onChange={(e) => setBookForm({ ...bookForm, cocktail_recipe: e.target.value })} />
             </label>
             <div className="divider">Links</div>
@@ -927,7 +972,14 @@ export default function Home() {
       )}
 
       {modal === "nomination" && (
-        <Modal title="Nominate a book" subtitle="Fill in as much as you know. Availability helps the group decide." onClose={() => setModal("")}>
+        <Modal
+          title={nominationEditing ? "Edit nomination" : "Nominate a book"}
+          subtitle="Fill in as much as you know. Availability helps the group decide."
+          onClose={() => {
+            setNominationEditing(null);
+            setModal("");
+          }}
+        >
           <form onSubmit={saveNomination}>
             <label>
               Title *
@@ -977,7 +1029,13 @@ export default function Home() {
                 </label>
               ))}
             </div>
-            <FormActions saving={saving} onCancel={() => setModal("")} />
+            <FormActions
+              saving={saving}
+              onCancel={() => {
+                setNominationEditing(null);
+                setModal("");
+              }}
+            />
           </form>
         </Modal>
       )}

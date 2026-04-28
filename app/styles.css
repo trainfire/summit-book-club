@@ -252,6 +252,7 @@ p {
 .secondary-button,
 .ghost-button,
 .danger-button,
+.compact,
 .segmented button {
   border-radius: 3px;
   font-family: var(--display);
@@ -287,6 +288,10 @@ p {
   background: #fff5f5;
   border: 1.5px solid #fca5a5;
   color: #b91c1c;
+}
+
+.compact {
+  padding: 7px 10px;
 }
 
 .ghost-button {
@@ -559,6 +564,12 @@ p {
   font-size: 0.58rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
+}
+
+.nomination-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
 }
 
 .badges span.availability.audio {
