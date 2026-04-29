@@ -41,6 +41,15 @@ const emptyNominationForm = {
   has_adaptation: false
 };
 
+const emptyHistoryForm = {
+  title: "",
+  author: "",
+  suggested_by: "",
+  read_date: "",
+  rating: "",
+  group_note: ""
+};
+
 const palette = [
   "#1e6b3c",
   "#7c3239",
@@ -134,17 +143,11 @@ export default function Home() {
   const [memberEditing, setMemberEditing] = useState<Member | null>(null);
   const [nominationEditing, setNominationEditing] = useState<Nomination | null>(null);
   const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null);
+  const [historyEditing, setHistoryEditing] = useState<ReadingHistory | null>(null);
   const [bookForm, setBookForm] = useState(emptyBookForm);
   const [nominationForm, setNominationForm] = useState(emptyNominationForm);
   const [quoteForm, setQuoteForm] = useState({ quote_text: "", book_title: "", book_author: "" });
-  const [historyForm, setHistoryForm] = useState({
-    title: "",
-    author: "",
-    suggested_by: "",
-    read_date: "",
-    rating: "",
-    group_note: ""
-  });
+  const [historyForm, setHistoryForm] = useState(emptyHistoryForm);
   const [memberForm, setMemberForm] = useState({ name: "", current_reading: "" });
 
   const selectedMember = useMemo(
@@ -290,6 +293,23 @@ export default function Home() {
         : { quote_text: "", book_title: "", book_author: "" }
     );
     setModal("quote");
+  }
+
+  function openHistoryModal(entry?: ReadingHistory) {
+    setHistoryEditing(entry ?? null);
+    setHistoryForm(
+      entry
+        ? {
+            title: entry.title,
+            author: entry.author,
+            suggested_by: entry.suggested_by ?? "",
+            read_date: entry.read_date ?? "",
+            rating: ratingLabel(entry.rating),
+            group_note: entry.group_note ?? ""
+          }
+        : emptyHistoryForm
+    );
+    setModal("history");
   }
 
   async function saveBook(event: FormEvent) {
@@ -477,23 +497,45 @@ export default function Home() {
     }
 
     setSaving(true);
-    const { error } = await supabase.from("reading_history").insert({
+    const payload = {
       title: historyForm.title.trim(),
       author: historyForm.author.trim(),
       suggested_by: historyForm.suggested_by.trim() || null,
       read_date: historyForm.read_date || null,
       rating: toNumber(historyForm.rating),
       group_note: historyForm.group_note.trim() || null
-    });
+    };
+    const result = historyEditing
+      ? await supabase.from("reading_history").update(payload).eq("id", historyEditing.id)
+      : await supabase.from("reading_history").insert(payload);
     setSaving(false);
 
+    if (result.error) {
+      showToast(result.error.message, "error");
+      return;
+    }
+    showToast(historyEditing ? "History entry updated." : "History entry added.", "success");
+    setHistoryForm(emptyHistoryForm);
+    setHistoryEditing(null);
+    setModal("");
+    await loadData();
+  }
+
+  async function deleteHistoryEntry(entry: ReadingHistory) {
+    if (!supabase) return;
+    if (!window.confirm(`Delete "${entry.title}" from reading history?`)) return;
+    setSaving(true);
+    const { error } = await supabase.from("reading_history").delete().eq("id", entry.id);
+    setSaving(false);
     if (error) {
       showToast(error.message, "error");
       return;
     }
-    showToast("History entry added.", "success");
-    setHistoryForm({ title: "", author: "", suggested_by: "", read_date: "", rating: "", group_note: "" });
-    setModal("");
+    if (historyEditing?.id === entry.id) {
+      setHistoryEditing(null);
+      setModal("");
+    }
+    showToast("History entry deleted.", "success");
     await loadData();
   }
 
@@ -793,11 +835,11 @@ export default function Home() {
                               {nomination.library_wait ? <span className="availability wait">{nomination.library_wait}</span> : null}
                             </div>
                             {nomination.suggested_by_name ? <small>Suggested by {nomination.suggested_by_name}</small> : null}
-                            <div className="nomination-actions">
-                              <button className="secondary-button compact" onClick={() => openNominationModal(nomination)}>
+                            <div className="subtle-actions nomination-actions">
+                              <button className="subtle-action" onClick={() => openNominationModal(nomination)}>
                                 Edit
                               </button>
-                              <button className="danger-button compact" onClick={() => deleteNomination(nomination)}>
+                              <button className="subtle-action danger" onClick={() => deleteNomination(nomination)}>
                                 Delete
                               </button>
                             </div>
@@ -839,11 +881,11 @@ export default function Home() {
                           {quote.submitted_by_name ? `Submitted by ${quote.submitted_by_name} \u00b7 ` : ""}
                           {dateLabel(quote.created_at.slice(0, 10), { month: "short", day: "numeric", year: "numeric" })}
                         </small>
-                        <div className="quote-actions">
-                          <button type="button" className="secondary-button" onClick={() => openQuoteModal(quote)}>
+                        <div className="subtle-actions quote-actions">
+                          <button type="button" className="subtle-action" onClick={() => openQuoteModal(quote)}>
                             Edit
                           </button>
-                          <button type="button" className="danger-button" onClick={() => deleteQuote(quote)}>
+                          <button type="button" className="subtle-action danger" onClick={() => deleteQuote(quote)}>
                             Delete
                           </button>
                         </div>
@@ -866,7 +908,7 @@ export default function Home() {
                     <h1>What we&apos;ve read</h1>
                     <p>Every pick since we started. Ratings are the club average from post-meeting check-ins.</p>
                   </div>
-                  <button className="primary-button" onClick={() => setModal("history")}>
+                  <button className="primary-button" onClick={() => openHistoryModal()}>
                     + Add Entry
                   </button>
                 </div>
@@ -882,6 +924,14 @@ export default function Home() {
                             {entry.suggested_by ? ` \u00b7 suggested by ${entry.suggested_by}` : ""}
                           </p>
                           {entry.group_note ? <p>{entry.group_note}</p> : null}
+                          <div className="history-actions">
+                            <button type="button" className="subtle-action" onClick={() => openHistoryModal(entry)}>
+                              Edit
+                            </button>
+                            <button type="button" className="subtle-action danger" onClick={() => deleteHistoryEntry(entry)}>
+                              Delete
+                            </button>
+                          </div>
                         </div>
                         {ratingLabel(entry.rating) ? <strong className="rating">{ratingLabel(entry.rating)} / 5</strong> : null}
                       </article>
@@ -1122,7 +1172,14 @@ export default function Home() {
       )}
 
       {modal === "history" && (
-        <Modal title="Add to reading history" subtitle="Record a completed book for the club's log." onClose={() => setModal("")}>
+        <Modal
+          title={historyEditing ? "Edit reading history" : "Add to reading history"}
+          subtitle="Record a completed book for the club's log."
+          onClose={() => {
+            setHistoryEditing(null);
+            setModal("");
+          }}
+        >
           <form onSubmit={saveHistory}>
             <label>
               Title *
@@ -1159,7 +1216,13 @@ export default function Home() {
               Group note
               <textarea value={historyForm.group_note} onChange={(e) => setHistoryForm({ ...historyForm, group_note: e.target.value })} />
             </label>
-            <FormActions saving={saving} onCancel={() => setModal("")} />
+            <FormActions
+              saving={saving}
+              onCancel={() => {
+                setHistoryEditing(null);
+                setModal("");
+              }}
+            />
           </form>
         </Modal>
       )}

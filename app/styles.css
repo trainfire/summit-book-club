@@ -566,12 +566,6 @@ p {
   text-transform: uppercase;
 }
 
-.nomination-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-}
-
 .badges span.availability.audio {
   background: var(--green-light);
   border-color: var(--green);
@@ -598,6 +592,7 @@ p {
   break-inside: avoid;
   margin-bottom: 14px;
   padding: 18px 20px;
+  position: relative;
 }
 
 .quote-mark {
@@ -621,15 +616,48 @@ p {
   font-size: 0.78rem;
 }
 
-.quote-actions {
+.subtle-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 14px;
+  gap: 6px;
 }
 
-.quote-actions button {
-  padding: 7px 10px;
+.nomination-actions,
+.quote-actions {
+  opacity: 0;
+  position: absolute;
+  right: 10px;
+  top: 10px;
+  transition: opacity 0.16s ease;
+}
+
+.nomination-card:hover .nomination-actions,
+.nomination-card:focus-within .nomination-actions,
+.quote-wall article:hover .quote-actions,
+.quote-wall article:focus-within .quote-actions {
+  opacity: 1;
+}
+
+.subtle-action {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  font-family: var(--display);
+  font-size: 0.58rem;
+  letter-spacing: 0.09em;
+  padding: 4px 7px;
+  text-transform: uppercase;
+}
+
+.subtle-action:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.subtle-action.danger:hover {
+  border-color: #fca5a5;
+  color: #b91c1c;
 }
 
 .timeline {
@@ -644,6 +672,12 @@ p {
   margin-bottom: 38px;
   padding-left: 40px;
   position: relative;
+}
+
+.history-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
 }
 
 .timeline article::before {
@@ -997,6 +1031,13 @@ textarea {
 
   .timeline article {
     grid-template-columns: 1fr;
+  }
+
+  .nomination-actions,
+  .quote-actions {
+    opacity: 1;
+    position: static;
+    margin-top: 10px;
   }
 }
 
