@@ -976,7 +976,6 @@ export default function Home() {
       </main>
 
       <footer className="footer">
-        <div>Data syncs with Supabase</div>
         <p>&quot;A book is a dream that you hold in your hands.&quot; - one of us, probably</p>
       </footer>
 
