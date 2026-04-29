@@ -621,6 +621,17 @@ p {
   font-size: 0.78rem;
 }
 
+.quote-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.quote-actions button {
+  padding: 7px 10px;
+}
+
 .timeline {
   border-left: 1px solid var(--border);
   margin-left: 120px;

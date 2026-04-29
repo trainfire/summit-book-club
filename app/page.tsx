@@ -133,6 +133,7 @@ export default function Home() {
   const [modal, setModal] = useState<"" | "book" | "nomination" | "quote" | "history" | "member">("");
   const [memberEditing, setMemberEditing] = useState<Member | null>(null);
   const [nominationEditing, setNominationEditing] = useState<Nomination | null>(null);
+  const [quoteEditing, setQuoteEditing] = useState<Quote | null>(null);
   const [bookForm, setBookForm] = useState(emptyBookForm);
   const [nominationForm, setNominationForm] = useState(emptyNominationForm);
   const [quoteForm, setQuoteForm] = useState({ quote_text: "", book_title: "", book_author: "" });
@@ -277,6 +278,20 @@ export default function Home() {
     setModal("nomination");
   }
 
+  function openQuoteModal(quote?: Quote) {
+    setQuoteEditing(quote ?? null);
+    setQuoteForm(
+      quote
+        ? {
+            quote_text: quote.quote_text,
+            book_title: quote.book_title,
+            book_author: quote.book_author ?? ""
+          }
+        : { quote_text: "", book_title: "", book_author: "" }
+    );
+    setModal("quote");
+  }
+
   async function saveBook(event: FormEvent) {
     event.preventDefault();
     if (!supabase) return;
@@ -402,29 +417,54 @@ export default function Home() {
 
   async function saveQuote(event: FormEvent) {
     event.preventDefault();
-    if (!supabase || !requireMember()) return;
+    if (!supabase) return;
+    if (!quoteEditing && !requireMember()) return;
     if (!quoteForm.quote_text.trim() || !quoteForm.book_title.trim()) {
       showToast("Quote and book title are required.", "error");
       return;
     }
 
     setSaving(true);
-    const { error } = await supabase.from("quotes").insert({
+    const payload = {
       quote_text: quoteForm.quote_text.trim(),
       book_title: quoteForm.book_title.trim(),
-      book_author: quoteForm.book_author.trim() || null,
-      submitted_by_member_id: selectedMember!.id,
-      submitted_by_name: selectedMember!.name
-    });
+      book_author: quoteForm.book_author.trim() || null
+    };
+    const result = quoteEditing
+      ? await supabase.from("quotes").update(payload).eq("id", quoteEditing.id)
+      : await supabase.from("quotes").insert({
+          ...payload,
+          submitted_by_member_id: selectedMember!.id,
+          submitted_by_name: selectedMember!.name
+        });
     setSaving(false);
 
+    if (result.error) {
+      showToast(result.error.message, "error");
+      return;
+    }
+    showToast(quoteEditing ? "Quote updated." : "Quote added.", "success");
+    setQuoteForm({ quote_text: "", book_title: "", book_author: "" });
+    setQuoteEditing(null);
+    setModal("");
+    await loadData();
+  }
+
+  async function deleteQuote(quote: Quote) {
+    if (!supabase) return;
+    if (!window.confirm(`Delete this quote from "${quote.book_title}"?`)) return;
+    setSaving(true);
+    const { error } = await supabase.from("quotes").delete().eq("id", quote.id);
+    setSaving(false);
     if (error) {
       showToast(error.message, "error");
       return;
     }
-    showToast("Quote added.", "success");
-    setQuoteForm({ quote_text: "", book_title: "", book_author: "" });
-    setModal("");
+    if (quoteEditing?.id === quote.id) {
+      setQuoteEditing(null);
+      setModal("");
+    }
+    showToast("Quote deleted.", "success");
     await loadData();
   }
 
@@ -782,7 +822,7 @@ export default function Home() {
                     <h1>The quote wall</h1>
                     <p>Lines that stopped you. From anything you&apos;re reading.</p>
                   </div>
-                  <button className="primary-button" onClick={() => setModal("quote")}>
+                  <button className="primary-button" onClick={() => openQuoteModal()}>
                     + Add a Quote
                   </button>
                 </div>
@@ -799,6 +839,14 @@ export default function Home() {
                           {quote.submitted_by_name ? `Submitted by ${quote.submitted_by_name} \u00b7 ` : ""}
                           {dateLabel(quote.created_at.slice(0, 10), { month: "short", day: "numeric", year: "numeric" })}
                         </small>
+                        <div className="quote-actions">
+                          <button type="button" className="secondary-button" onClick={() => openQuoteModal(quote)}>
+                            Edit
+                          </button>
+                          <button type="button" className="danger-button" onClick={() => deleteQuote(quote)}>
+                            Delete
+                          </button>
+                        </div>
                       </article>
                     ))}
                   </div>
@@ -1041,7 +1089,14 @@ export default function Home() {
       )}
 
       {modal === "quote" && (
-        <Modal title="Add a quote" subtitle="From anything you're reading, not just the club pick." onClose={() => setModal("")}>
+        <Modal
+          title={quoteEditing ? "Edit quote" : "Add a quote"}
+          subtitle="From anything you're reading, not just the club pick."
+          onClose={() => {
+            setQuoteEditing(null);
+            setModal("");
+          }}
+        >
           <form onSubmit={saveQuote}>
             <label>
               The quote *
@@ -1055,7 +1110,13 @@ export default function Home() {
               Author
               <input value={quoteForm.book_author} onChange={(e) => setQuoteForm({ ...quoteForm, book_author: e.target.value })} />
             </label>
-            <FormActions saving={saving} onCancel={() => setModal("")} />
+            <FormActions
+              saving={saving}
+              onCancel={() => {
+                setQuoteEditing(null);
+                setModal("");
+              }}
+            />
           </form>
         </Modal>
       )}
